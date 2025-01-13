@@ -1,4 +1,4 @@
-import { createUser, deleteUser, User } from '../../shared/api';
+import { createUser, deleteUser } from '../../shared/api';
 // Types
 export type CreateActionState = {
     error?: string;
@@ -19,7 +19,12 @@ export function createUserAction({
 }): CreateUserAction {
     return async (_, formData) => {
         const email = formData.get('email') as string;
-
+        if (email.length === 0) {
+            return {
+                error: 'Email cannot be empty',
+                email: '',
+            };
+        }
         if (email === 'dh92fr@gmail.com') {
             return {
                 error: 'Admin account is not allowed',
@@ -32,6 +37,7 @@ export function createUserAction({
                 email,
                 id: crypto.randomUUID(),
             };
+
             // optimisticCreate(user);
             await createUser(user);
 

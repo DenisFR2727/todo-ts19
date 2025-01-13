@@ -1,12 +1,14 @@
-import React, { Suspense, use, useActionState, useState } from 'react';
+import { Suspense, use, useActionState, useState } from 'react';
 import { fetchUsers, User } from '../../shared/api';
 import { ErrorBoundary } from 'react-error-boundary';
 import { PacmanLoader } from 'react-spinners';
 import { createUserAction, deleteUserAction } from './actions';
+import { ThemeContext, ThemeContextType } from './context';
 
 const defaultUsersPromise = fetchUsers();
 
 export function UsersPage() {
+    const { theme, toggleTheme } = use(ThemeContext) as ThemeContextType;
     const [usersPromise, setUsersPromise] = useState(defaultUsersPromise);
     const refetchUsers = () => {
         // Для сетинга нового запиту!
@@ -14,10 +16,22 @@ export function UsersPage() {
     };
 
     return (
-        <main className="container mx-auto p-4 pt-10 flex flex-col gap-4">
+        <main
+            style={{
+                backgroundColor: theme.colors.background,
+                color: theme.colors.text,
+            }}
+            className="container mx-auto p-4 pt-10 flex flex-col gap-4"
+        >
             <h1 className="text-3xl font-bold underline flex justify-center">
                 Hello Users
             </h1>
+            <button
+                className="p-1  bg-blue-500 rounded-[10px]"
+                onClick={toggleTheme}
+            >
+                change theme
+            </button>
             <CreateUserForm refetchUsers={refetchUsers} />
             <ErrorBoundary
                 fallbackRender={({ error }) => (
@@ -95,13 +109,17 @@ export function UserCard({
     user: User;
     refetchUsers: () => void;
 }) {
+    const bgCard = use(ThemeContext) as ThemeContextType;
     const [state, handleDelete, isPending] = useActionState(
         deleteUserAction({ id: user.id, refetchUsers }),
         {}
     );
 
     return (
-        <div className="border p-2 m-2 rounded bg-gray-100 flex justify-between">
+        <div
+            style={{ background: bgCard.theme.colors.background }}
+            className="border p-2 m-2 rounded bg-gray-100 flex justify-between"
+        >
             {user.email}
             <form className="ml-auto" action={handleDelete}>
                 <button

@@ -1,19 +1,5 @@
 import { createContext, ReactNode, useState } from 'react';
-
-export interface ThemeContextType {
-    theme: Theme;
-    toggleTheme: () => void;
-}
-
-interface Colors {
-    background: string;
-    text: string;
-}
-
-export interface Theme {
-    mode: 'light' | 'dark';
-    colors: Colors;
-}
+import { Theme, ThemeContextType } from './types';
 
 // Create a ThemeContext
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -35,7 +21,7 @@ const ThemeProvider = ({ children }: { children: ReactNode }) => {
                       mode: 'dark',
                       colors: {
                           background: '#333',
-                          text: '#fff',
+                          text: '#0013e9',
                       },
                   }
                 : {

@@ -1,4 +1,4 @@
-import { createUser, deleteUser } from '../../shared/api';
+import { createUser, deleteUser, User } from '../../shared/api';
 // Types
 export type CreateActionState = {
     error?: string;
@@ -9,22 +9,20 @@ export type CreateUserAction = (
     state: CreateActionState,
     formData: FormData
 ) => Promise<CreateActionState>;
+
+// export type CreateUserAction = (state: CreateActionState, formData:FormData): Promise<CreateActionState>
+
 //--------------------------------------Actions
 export function createUserAction({
     refetchUsers,
-}: // optimisticCreate,
-{
+    optimisticCreate,
+}: {
     refetchUsers: () => void;
-    // optimisticCreate: (user: User) => void;
+    optimisticCreate: (user: User) => void;
 }): CreateUserAction {
-    return async (_, formData) => {
+    return async (_, formData: FormData) => {
         const email = formData.get('email') as string;
-        if (email.length === 0) {
-            return {
-                error: 'Email cannot be empty',
-                email: '',
-            };
-        }
+
         if (email === 'dh92fr@gmail.com') {
             return {
                 error: 'Admin account is not allowed',
@@ -38,7 +36,7 @@ export function createUserAction({
                 id: crypto.randomUUID(),
             };
 
-            // optimisticCreate(user);
+            optimisticCreate(user);
             await createUser(user);
 
             refetchUsers();
@@ -54,7 +52,7 @@ export function createUserAction({
         }
     };
 }
-
+// Delete Action
 export type DeleteUserActionState = {
     error?: string;
 };
@@ -64,16 +62,24 @@ export type DeleteUserAction = (
     formData: FormData
 ) => Promise<DeleteUserActionState>;
 
-export const deleteUserAction =
-    ({ id, refetchUsers }: { refetchUsers: () => void; id: string }) =>
-    async (): Promise<DeleteUserActionState> => {
+export const deleteUserAction = ({
+    refetchUsers,
+    optimisticDelete,
+}: {
+    refetchUsers: () => void;
+    optimisticDelete: (id: string) => void;
+}): DeleteUserAction => {
+    return async (_, formData: FormData) => {
+        const id = formData.get('id') as string;
         try {
+            optimisticDelete(id);
             await deleteUser(id);
             refetchUsers();
             return {};
         } catch {
             return {
-                error: ' Error while deleting user',
+                error: 'Error while deleting user',
             };
         }
     };
+};

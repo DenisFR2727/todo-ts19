@@ -1,19 +1,17 @@
-import { Suspense, use, useActionState, useState } from 'react';
-import { fetchUsers, User } from '../../shared/api';
+import { Suspense, use, useActionState } from 'react';
+import { User } from '../../shared/api';
 import { ErrorBoundary } from 'react-error-boundary';
 import { PacmanLoader } from 'react-spinners';
-import { createUserAction, deleteUserAction } from './actions';
-import { ThemeContext, ThemeContextType } from './context';
+import { CreateUserAction, DeleteUserAction } from './actions';
+import { ThemeContext } from './context';
+import { useUsers } from './use-users';
 
-const defaultUsersPromise = fetchUsers();
+// Types
+import { ThemeContextType } from './types';
 
 export function UsersPage() {
     const { theme, toggleTheme } = use(ThemeContext) as ThemeContextType;
-    const [usersPromise, setUsersPromise] = useState(defaultUsersPromise);
-    const refetchUsers = () => {
-        // Для сетинга нового запиту!
-        setUsersPromise(fetchUsers());
-    };
+    const { useUsersList, createUserAction, deleteUserAction } = useUsers(); // custom hook useUsers
 
     return (
         <main
@@ -32,7 +30,7 @@ export function UsersPage() {
             >
                 change theme
             </button>
-            <CreateUserForm refetchUsers={refetchUsers} />
+            <CreateUserForm createUserAction={createUserAction} />
             <ErrorBoundary
                 fallbackRender={({ error }) => (
                     <div className="text-red-600">
@@ -42,8 +40,8 @@ export function UsersPage() {
             >
                 <Suspense fallback={<PacmanLoader />}>
                     <UsersList
-                        usersPromise={usersPromise}
-                        refetchUsers={refetchUsers}
+                        useUsersList={useUsersList}
+                        deleteUserAction={deleteUserAction}
                     />
                 </Suspense>
             </ErrorBoundary>
@@ -51,13 +49,14 @@ export function UsersPage() {
     );
 }
 
-export function CreateUserForm({ refetchUsers }: { refetchUsers: () => void }) {
-    const [state, dispatch, isPending] = useActionState(
-        createUserAction({
-            refetchUsers,
-        }),
-        { email: '' }
-    );
+export function CreateUserForm({
+    createUserAction,
+}: {
+    createUserAction: CreateUserAction;
+}) {
+    const [state, dispatch, isPending] = useActionState(createUserAction, {
+        email: '',
+    });
 
     return (
         <form className="flex gap-2" action={dispatch}>
@@ -81,14 +80,14 @@ export function CreateUserForm({ refetchUsers }: { refetchUsers: () => void }) {
 }
 
 export function UsersList({
-    usersPromise,
-    refetchUsers,
+    deleteUserAction,
+    useUsersList,
 }: {
-    usersPromise: Promise<User[]>;
-    refetchUsers: () => void;
+    deleteUserAction: DeleteUserAction;
+    useUsersList: () => User[];
 }) {
-    // use перетворює з юзерПромис до звичайних юзерів User[], use хук повинен працювати з саспенсом разом!
-    const users = use(usersPromise);
+    // useUserList перетворює з юзерПромис до звичайних юзерів User[], use хук повинен працювати з саспенсом разом!
+    const users = useUsersList();
 
     return (
         <div className="flex flex-col">
@@ -96,7 +95,7 @@ export function UsersList({
                 <UserCard
                     key={user.id}
                     user={user}
-                    refetchUsers={refetchUsers}
+                    deleteUserAction={deleteUserAction}
                 />
             ))}
         </div>
@@ -104,14 +103,14 @@ export function UsersList({
 }
 export function UserCard({
     user,
-    refetchUsers,
+    deleteUserAction,
 }: {
     user: User;
-    refetchUsers: () => void;
+    deleteUserAction: DeleteUserAction;
 }) {
     const bgCard = use(ThemeContext) as ThemeContextType;
     const [state, handleDelete, isPending] = useActionState(
-        deleteUserAction({ id: user.id, refetchUsers }),
+        deleteUserAction,
         {}
     );
 
@@ -122,6 +121,7 @@ export function UserCard({
         >
             {user.email}
             <form className="ml-auto" action={handleDelete}>
+                <input type="hidden" name="id" value={user.id} />
                 <button
                     className="p-2 bg-red-500 mr-4 disabled:bg-red-300"
                     disabled={isPending}
